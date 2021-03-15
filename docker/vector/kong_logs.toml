@@ -1,0 +1,73 @@
+# Kong logs are received via TCP 
+[sources.kong_logs]
+  type = "socket" 
+  address = "0.0.0.0:9000"
+  max_length = 102400 
+  mode = "tcp"
+
+
+# Each log message is json but it contains much more information
+# than required, and I want to use the `started_at` ms epoch as 
+# timestamp for the event, not the one appended by Vector 
+[transforms.kong_logs_shortened]
+  type = "remap" 
+  inputs = ["kong_logs"] 
+  source = ''' 
+  ., _ = parse_json(.message)
+  ts, _ = .started_at / 1000
+  .timestamp = to_timestamp(floor(ts))
+  .request.headers = {
+    "user-agent":                  .request.headers."user-agent",
+    "host":                        .request.headers.host,
+    "x-forwarded-for":             .request.headers."x-forwarded-for", 
+    "x-consumer-id":               .request.headers."x-consumer-id",
+    "x-consumer-username":         .request.headers."x-consumer-username"
+  }
+  .response.headers = {   
+    "content-length":              .response.response."content-length",
+    "content-type":                .response.response."content-type",
+    "x-kong-proxy-latency":        .response.response."x-kong-proxy-latency", 
+    "x-kong-upstream-latency":     .response.response."x-kong-upstream-latency"
+  }
+  .route = {
+    "https_redirect_status_code":  .route."https_redirect_status_code",
+    "methods":                     .route.methods,
+    "name" :                       .route.name,
+    "paths" :                      .route.paths,
+  }
+  .service = {
+    "name":                        .service.name,
+    "tags":                        .service.tags
+  }
+  '''
+
+# Clickhouse is a SQL database, therefore I need to remap
+# the event object to match the table schema and formats
+[transforms.kong_logs_clickhouse_ready]
+  type = "remap" 
+  inputs = ["kong_logs_shortened"] 
+  source = ''' 
+  ts, _ = format_timestamp(.timestamp, "%F %T")
+  . = {
+    "timestamp": ts,
+    "consumer_username": .request.headers."x-consumer-username",
+    "request_method": .request.method,
+    "request_size": .request.size,
+    "request_uri": .request.uri,
+    "request_url": .request.url,
+    "service_name": .service.name,
+    "response_status": .response.status,
+    "latency_kong": .latencies.kong,
+    "latency_proxy": .latencies.proxy,
+    "latency_request": .latencies.request
+  }
+  '''
+
+# I send the log objects to Clickhouse
+[sinks.kong_logs_clickhouse]
+  type = "clickhouse" 
+  inputs = ["kong_logs_clickhouse_ready"]
+  compression = "gzip" 
+  database = "kong"
+  endpoint = "http://clickhouse:8123"
+  table = "log" 

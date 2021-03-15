@@ -1,0 +1,31 @@
+_format_version: "1.1"
+
+services:
+  - name: my-service
+    url: http://nginx:80
+    tags:
+      - mytags
+    routes:
+      - name: my-route
+        methods:
+          - GET
+        paths:
+          - /mypath
+        strip_path: true
+
+consumers:
+- username: my-user
+  keyauth_credentials:
+  - key: my-key
+
+plugins:
+  - name: tcp-log
+    enabled: true
+    config:
+      host: vector
+      port: 9000
+
+  - name: key-auth
+    enabled: true
+    config: 
+      key_names: ["apikey"]

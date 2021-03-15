@@ -1,0 +1,53 @@
+version: '3'
+services:
+
+  kong:
+    image: kong:2.3.3-alpine
+    container_name: kong
+    volumes:
+      - ./docker/kong/config.yaml:/etc/kong/kong.yml
+      - ./docker/kong/kong.conf:/etc/kong/kong.conf
+    environment:
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yml
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl
+      - KONG_LOG_LEVEL=info
+      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+      - KONG_ADMIN_ERROR_LOG=/dev/stderr
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+    ports:
+      - 8000:8000
+    networks:
+      - demo-kong-vector-clickhouse
+
+  nginx:
+    image: nginx:1.19.8-alpine
+    container_name: nginx
+    networks:
+      - demo-kong-vector-clickhouse
+
+  clickhouse:
+    image: yandex/clickhouse-server:20.8.12.2
+    container_name: clickhouse
+    volumes:
+      - ./docker/clickhouse/init:/docker-entrypoint-initdb.d
+    tmpfs:
+      - /var/lib/clickhouse
+    networks:
+      - demo-kong-vector-clickhouse
+    
+  vector:
+    image: timberio/vector:0.12.1-alpine
+    container_name: vector
+    volumes:
+      - ./docker/vector/:/etc/vector/
+    ports:
+      - 8686:8686
+    entrypoint: "vector --config /etc/vector/*.toml"
+    networks:
+      - demo-kong-vector-clickhouse
+
+networks:
+  demo-kong-vector-clickhouse:
+
