@@ -17,7 +17,7 @@
       ## Test entire payload after transformation
       encode_json(.) == "{\"authenticated_entity\":{\"id\":\"487ab43c-b2c9-51ec-8da5-367586ea2b61\"},\"client_ip\":\"172.20.0.1\",\"consumer\":{\"created_at\":1615809852,\"id\":\"4b1b701d-de2b-5588-9aa2-3b97061d9f52\",\"username\":\"my-user\"},\"latencies\":{\"kong\":2,\"proxy\":1,\"request\":3},\"request\":{\"headers\":{\"host\":\"localhost:8000\",\"user-agent\":\"curl/7.68.0\",\"x-consumer-id\":\"4b1b701d-de2b-5588-9aa2-3b97061d9f52\",\"x-consumer-username\":\"my-user\",\"x-forwarded-for\":null},\"method\":\"GET\",\"querystring\":{},\"size\":100,\"uri\":\"/mypath\",\"url\":\"http://localhost:8000/mypath\"},\"response\":{\"headers\":{\"content-length\":null,\"content-type\":null,\"x-kong-proxy-latency\":null,\"x-kong-upstream-latency\":null},\"size\":935,\"status\":200},\"route\":{\"https_redirect_status_code\":426,\"methods\":[\"GET\"],\"name\":\"my-route\",\"paths\":[\"/mypath\"]},\"service\":{\"name\":\"my-service\",\"tags\":[\"mytags\"]},\"started_at\":1615809924110,\"timestamp\":\"2021-03-15T12:05:24Z\",\"tries\":[{\"balancer_latency\":0,\"balancer_start\":1615809924112,\"ip\":\"172.20.0.3\",\"port\":80}],\"upstream_uri\":\"/\"}"
       '''
-      
+
 [[tests]]
   ## This tests the first and the second transformations. The output is the log object ready
   ## to be inserted into Clickhouse
@@ -32,5 +32,5 @@
       type = "remap"
       source = '''
       ## Test entire payload after transformation
-      encode_json(.) == "{\"consumer_username\":\"my-user\",\"latency_kong\":2,\"latency_proxy\":1,\"latency_request\":3,\"request_method\":\"GET\",\"request_size\":100,\"request_uri\":\"/mypath\",\"request_url\":\"http://localhost:8000/mypath\",\"response_status\":200,\"service_name\":\"my-service\",\"timestamp\":\"2021-03-15 12:05:24\"}"
+      encode_json(.) == "{\"consumer_username\":\"my-user\",\"latency_kong\":2,\"latency_proxy\":1,\"latency_request\":3,\"request_method\":\"GET\",\"request_size\":100,\"request_uri\":\"/mypath\",\"request_url\":\"http://localhost:8000/mypath\",\"response_status\":200,\"service_name\":\"my-service\",\"timestamp\":\"2021-03-15 12:05:25\"}"
       '''
